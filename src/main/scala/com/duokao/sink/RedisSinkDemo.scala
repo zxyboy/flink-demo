@@ -1,11 +1,7 @@
 package com.duokao.sink
 
-import java.util.Properties
-
 import com.duokao.transform.Sensor
-import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.streaming.api.scala._
-import org.apache.flink.streaming.connectors.kafka.{FlinkKafkaConsumer011, FlinkKafkaProducer011}
 import org.apache.flink.streaming.connectors.redis.RedisSink
 import org.apache.flink.streaming.connectors.redis.common.config.FlinkJedisPoolConfig
 import org.apache.flink.streaming.connectors.redis.common.mapper.{RedisCommand, RedisCommandDescription, RedisMapper}
@@ -15,16 +11,8 @@ object RedisSinkDemo {
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.setParallelism(1)
 
-    val properties = new Properties()
-    properties.put("bootstrap.servers", "localhost:9092")
-    properties.put("group.id", "consumer-test")
-    properties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
-    properties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
-    properties.put("auto.offset.reset", "latest")
-    val inputTopic = "sensor"
-
-
-    val kafkaStream = env.addSource(new FlinkKafkaConsumer011[String](inputTopic, new SimpleStringSchema(), properties))
+    val filePath = "/Users/xy/IdeaProjects/flink-demo/src/main/resources/sensor.txt"
+    val kafkaStream = env.readTextFile(filePath)
       .map(line => {
         val strings = line.split(",")
         Sensor(strings(0).strip(), strings(1).strip().toDouble, strings(2).strip().toLong)
@@ -33,15 +21,14 @@ object RedisSinkDemo {
     val config = new FlinkJedisPoolConfig.Builder()
       .setHost("localhost")
       .setDatabase(0)
-      .setPassword("rootqaz")
+      .setPassword("rootqaz123")
       .setPort(6379)
       .build()
     // Sink
     kafkaStream.addSink(new RedisSink(config, new MyRedisMapper))
     kafkaStream.print("print->")
-
-
-    env.execute("redis sink job")
+    
+    env.execute("redis sink job test")
   }
 }
 
